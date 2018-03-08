@@ -65,10 +65,10 @@ def modify_cr(year, dirname):
                             modified_file.append(newdir)
                         elif re.search(r'^\s*\*+\s+Copyright\sFUJITSU\sLIMITED\s*\d\d\d\d', line):
                             print(line)
-                            findstr = re.findall(r'(\d\d\d\d)', line)
+                            findstr = re.search(r'(\d\d\d\d)', line)
                             print(findstr)
                             if findstr[0] < str(year):
-                                line = re.sub(r'\d\d\d\d', findstr[0]+'-'+str(year), line)
+                                line = re.sub(r'\d\d\d\d', findstr+'-'+str(year), line)
                                 f2.write(line)
                                 modified_file.append(newdir)
                             else:
@@ -134,9 +134,16 @@ def modify_cl_i(date, dirname):
                                                     if re.search(r'\*\s+\d+\W\d+\W\d+', i) and log_num > 1:
                                                         log_num -= 1
                                                         continue
-                                                    else:
+                                                    elif log_num != 0:
                                                         i = re.sub(r'\d+\W\d+\W\d+', str(date), i)
+                                                        findstr = re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+)(.*)', i)
+                                                        temp = list(findstr[0])
+                                                        temp[2] = 'Create\n'
+                                                        i = temp[0] + temp[1] + temp[2]
                                                         mocified_cr_content.append(i)                    # only retain one change log and change the time.
+                                                        log_num -= 1
+                                                    else:
+                                                        mocified_cr_content.append(i)
                                                 else:
                                                     mocified_cr_content.append(i)
                                             for i in mocified_cr_content:
@@ -155,11 +162,65 @@ def modify_cl_i(date, dirname):
                         else:
                             f2.write(line)
                     modified_file.append(newdir)
-                os.remove(newdir)  # replace the old file with modified on.
-                os.rename("%s.bak" % newdir, newdir)
+                # os.remove(newdir)  # replace the old file with modified on.
+                # os.rename("%s.bak" % newdir, newdir)
     print("All file modified is:")
     print(modified_file)
     print("Total num is : %d" % len(modified_file))
+
+
+def modify_cl(date, hash1, hash2, repo):
+
+    modified_file = []
+    folder1 = 'lastrelease'
+    folder2 = 'lastrelease'
+    checked_path = ['FLI/Source/FLI/SC/BasePort/phy_kernel', 'FLI/Source/FLI/SC/BasePort/test/P2_test']
+    filelist = []
+    start_path = os.path.abspath('.') + '\\'
+
+    if os.path.exists(folder1):
+        os.system('rd/s/q %s' % folder1)
+        os.system('mkdir %s' % folder1)
+    else:
+        os.system('mkdir %s' % folder1)
+
+    if os.path.exists(folder2):
+        os.system('rd/s/q %s' % folder2)
+        os.system('mkdir %s' % folder2)
+    else:
+        os.system('mkdir %s' % folder2)
+
+    os.system('git clone %s .\\lastrelease ' % repo)
+    os.system('git clone %s .\\nextrelease ' % repo)
+
+    os.chdir(folder1)
+    os.system('git checkout -f %s' % hash1)
+
+    os.chdir(start_path+folder2)
+    os.system('git checkout -f %s' % hash2)
+
+    os.system('git config diff.renameLimit 99999')
+
+    os.system('git diff %s %s  --name-only  >..\\filelist.txt ' % (hash1, hash2))
+
+    os.chdir(start_path)
+
+    with open('test.txt', "r", encoding="utf-8") as file:
+        for num, line in enumerate(file):
+            for i in checked_path:
+                if i in line:
+                    filelist.append(line)
+                    break
+                else:
+                    continue
+
+    for num, i in enumerate(filelist):
+        filelist[num] = i.replace('/', '\\')
+
+    print("All file modified is:")
+    print(modified_file)
+    print("Total num is : %d" % len(modified_file))
+
 
 
 def main(argv):
@@ -192,9 +253,7 @@ def main(argv):
             usage()
             sys.exit()
 
-    logging.info("Checking is done.")
-
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
- #   modify_cl_i('2018-2-10', 'test')
+ #   main(sys.argv[1:])
+    modify_cl_i('2018-2-10', 'test')
