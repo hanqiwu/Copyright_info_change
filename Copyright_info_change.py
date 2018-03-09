@@ -169,57 +169,69 @@ def modify_cl_i(date, dirname):
     print("Total num is : %d" % len(modified_file))
 
 
-def modify_cl(date, str, hash1, hash2, repo):
-
+def modify_cl(date, hash1, hash2, repo):
     modified_file = []
-    folder1 = 'lastrelease\\'
-    folder2 = 'newrelease\\'
-    checked_path = ['FLI/Source/FLI/SC/BasePort/phy_kernel', 'FLI/Source/FLI/SC/BasePort/test/P2_test']
-    filelist = []
+    # folder1 = 'lastrelease\\'
+    # folder2 = 'newrelease\\'
+    folder1 = 'test1\\'
+    folder2 = 'test2\\'
+    checked_path = ['FLI\\Source\\FLI\\SC\\BasePort\\phy_kernel', 'FLI\\Source\\FLI\\SC\\BasePort\\test\\P2_test', 'test']
+    filelist = ['test1.c']
     start_path = os.path.abspath('.') + '\\'
 
-    if os.path.exists(folder1):
-        os.system('rd/s/q %s' % folder1)
-        os.system('mkdir %s' % folder1)
-    else:
-        os.system('mkdir %s' % folder1)
+    # if os.path.exists(folder1):
+    #     print('Remove old %s folder' % folder1)
+    #     os.system('rd/s/q %s' % folder1)
+    #     os.system('mkdir %s' % folder1)
+    # else:
+    #     os.system('mkdir %s' % folder1)
+    #
+    # if os.path.exists(folder2):
+    #     print('Remove old %s folder' % folder2)
+    #     os.system('rd/s/q %s' % folder2)
+    #     os.system('mkdir %s' % folder2)
+    # else:
+    #     os.system('mkdir %s' % folder2)
+    #
+    # print('Beging to clone')
+    # os.system('git clone %s %s ' %(repo, folder1))
+    # os.system('git clone %s %s ' %(repo, folder2))
+    #
+    # print('Being to check out')
+    # os.chdir(folder1)
+    # os.system('git checkout -f %s' % hash1)
+    #
+    # os.chdir(start_path+folder2)
+    # os.system('git checkout -f %s' % hash2)
+    #
+    # os.system('git config diff.renameLimit 99999')
+    #
+    # diff the change between last deliver before change copyright with new delivery before change copyright
+    # os.system('git diff %s~1 %s  --name-only  >..\\filelist.txt ' % (hash1, hash2))
+    #
+    # os.chdir(start_path)
 
-    if os.path.exists(folder2):
-        os.system('rd/s/q %s' % folder2)
-        os.system('mkdir %s' % folder2)
-    else:
-        os.system('mkdir %s' % folder2)
+    # with open('filelist.txt', "r", encoding="utf-8") as file:
+    #     for num, line in enumerate(file):
+    #         line = line.replace('/', '\\')
+    #         for i in checked_path:
+    #             if i in line:
+    #                 temp = os.path.splitext(line)
+    #                 if os.path.splitext(line)[1] == ".c\n" or os.path.splitext(line)[1] == ".h\n":
+    #                     filelist.append(line)
+    #                     break
+    #             else:
+    #                 continue
+    #
+    # with open('validfile.txt', "w", encoding="utf-8") as file:
+    #     for i in filelist:
+    #         file.write(i)
 
-    os.system('git clone %s %s ' %(repo, folder1))
-    os.system('git clone %s %s ' %(repo, folder2))
+    print('Beging to handle files')
 
-    os.chdir(folder1)
-    os.system('git checkout -f %s' % hash1)
-
-    os.chdir(start_path+folder2)
-    os.system('git checkout -f %s' % hash2)
-
-    os.system('git config diff.renameLimit 99999')
-
-    os.system('git diff %s %s  --name-only  >..\\filelist.txt ' % (hash1, hash2))
-
-    os.chdir(start_path)
-
-    with open('filelist.txt', "r", encoding="utf-8") as file:
-        for num, line in enumerate(file):
-            for i in checked_path:
-                if i in line:
-                    if os.path.splitext(i)[1] == ".c" or os.path.splitext(i)[1] == ".h":
-                        filelist.append(line)
-                        break
-                else:
-                    continue
-
-    for num, i in enumerate(filelist):
-        filelist[num] = i.replace('/', '\\')
-
-    for i in filelist:
-        if os.path.exists(folder1+i):
+    for filename in filelist:
+        filename = filename.strip('\n')
+        if os.path.exists(folder1+filename):
             folder1_cr = []      #save the copyright content of last release file
             folder2_cr = []      #save the copyright content of new release file
             modified_cr = []     #save the modified copyright content of new release file
@@ -232,7 +244,7 @@ def modify_cl(date, str, hash1, hash2, repo):
             modified_flag2 = 0    #Whehter the copyright modification is done.
             special_list = []
 
-            with open(folder1+i, "r", encoding="utf-8") as file1:      #fetch the copyright content from last release file.
+            with open(folder1+filename, "r", encoding="utf-8") as file1:      #fetch the copyright content from last release file.
                 for num, line in enumerate(file1):
                     if re.search(r'/\*\*\*\*\*+', line) and find_cr1 == 0:
                         find_cr = 1
@@ -240,7 +252,7 @@ def modify_cl(date, str, hash1, hash2, repo):
                         continue
                     if find_cr == 1:
                         if re.search(r'\*\s+Date\s+Who\s+What', line) and cl_flag1 == 0:
-                            cl_flag = 1
+                            cl_flag1 = 1
                             folder1_cr.append(line)
                             continue
                         if cl_flag1 == 1:
@@ -259,7 +271,7 @@ def modify_cl(date, str, hash1, hash2, repo):
                             folder1_cr.append(line)
 
             # Beginning to modify new release copyright content.
-            with open(folder2 + i, "r", encoding="utf-8") as f1, open("%s.bak" % folder2 + i, "w", encoding="utf-8") as f2:
+            with open(folder2 + filename, "r", encoding="utf-8") as f1, open("%s.bak" % (folder2 + filename), "w", encoding="utf-8") as f2:
                 for num, line in enumerate(f1):
                     if modified_flag2 == 0:
                         if re.search(r'/\*\*\*\*\*+', line) and find_cr2 == 0:
@@ -280,42 +292,32 @@ def modify_cl(date, str, hash1, hash2, repo):
                                         find_cr1 = 0
                                         cl_flag1 = 0
                                         folder2_cr.append(line)
-                                        f1list = list((re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+.*)', folder1_cr[-2]))[0])
-                                        f2list = list((re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+.*)', folder2_cr[-2]))[0])
-                                        f2list_1 = list((re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+.*)', folder2_cr[-3]))[0])
-                                        if f1list[1] == f2list[1]:
-                                            tstr = re.sub(r'\d+\W\d+\W\d+', str(date), folder1_cr[-2])
-                                            findstr = re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+)(.*)', tstr)
-                                            teml = list(findstr[0])
-                                            teml[2] = str+'\n'
-                                            folder1_cr.insert(-2, teml[0] + teml[1] + teml[2])
+                                        for i in range(1, log_num1+1):
+                                            i = -1-i
+                                            f1list = list((re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+\S+\s+(.*\n)*)', folder1_cr[i]))[0])
+                                            f2list = list((re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+\S+\s+(.*\n)*)', folder2_cr[-2]))[0])
+                                            if f1list[1] == f2list[1]:
+                                                special_list.append(filename)
+                                                for cr in folder2_cr:
+                                                    f2.write(cr)
+                                                modified_flag2 = 1
+
+                                        if modified_flag2 == 0:
+                                            tstr = re.sub(r'\d+\W\d+\W\d+', str(date), folder2_cr[-2])
+                                            folder1_cr.insert(-1, tstr)
                                             for cr in folder1_cr:
                                                 f2.write(cr)
                                                 modified_flag2 = 1
-                                                modified_file.append(i)
-                                        elif f1list[1] == f2list_1[1]:
-                                            tstr = re.sub(r'\d+\W\d+\W\d+', str(date), folder2_cr[-3])
-                                            folder1_cr.insert(-2, tstr)
-                                            for cr in folder1_cr:
-                                                f2.write(cr)
-                                                modified_flag2 = 1
-                                                modified_file.append(i)
-                                        else:
-                                            special_list.append(i)
-
-
-
-
+                                            modified_file.append(filename)
                                     else:
                                         folder2_cr[-1] = folder2_cr[-1] + line  # one change log has multiple line.
                             else:
                                 folder2_cr.append(line)
-
                     else:
                         f2.write(line)
 
-            os.remove(folder2 + i)  # replace the old file with modified on.
-            os.rename("%s.bak" % folder2 + i, folder2 + i)
+            # os.remove(folder2 + i)  # replace the old file with modified on.
+            # os.rename("%s.bak" % folder2 + i, folder2 + i)
 
 
         else:      #New file should be handled as first release.
@@ -323,8 +325,9 @@ def modify_cl(date, str, hash1, hash2, repo):
             mocified_cr_content = []
             log_num = 0
             find_cr = 0
+            cl_flag = 0
             modified_flag = 0
-            with open(folder2+i, "r", encoding="utf-8") as f1, open("%s.bak" % folder2+i, "w", encoding="utf-8") as f2:
+            with open(folder2+filename, "r", encoding="utf-8") as f1, open("%s.bak" % (folder2+filename), "w", encoding="utf-8") as f2:
                 for num, line in enumerate(f1):
                     if modified_flag == 0:
                         if re.search(r'/\*\*\*\*\*+', line) and find_cr == 0:
@@ -388,8 +391,8 @@ def modify_cl(date, str, hash1, hash2, repo):
                     else:
                         f2.write(line)
                 modified_file.append(i)
-                os.remove(folder2+i)  # replace the old file with modified on.
-                os.rename("%s.bak" % folder2+i, folder2+i)
+                # os.remove(folder2+i)  # replace the old file with modified on.
+                # os.rename("%s.bak" % folder2+i, folder2+i)
 
     print("All file modified is:")
     print(modified_file)
@@ -430,6 +433,6 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+#    main(sys.argv[1:])
  #   modify_cl_i('2018-2-10', 'test')
- #   modify_cl('2018-2-10', 'second release', 'abdced', 'agdsed', 'http://12345')
+    modify_cl('2018-2-10', 'abdced', 'agdsed', 'http://12345')
