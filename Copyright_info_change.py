@@ -10,7 +10,16 @@ logger = logging.getLogger(__name__)
 
 
 def usage():
-    print("test")
+    print("Usage:")
+    print("")
+    print("For first release to change copyright:")
+    print("python Copyright_info_change.py -i [date] [folder path]")
+    print("-----------------------------------------------------------")
+    print("For first release to change changelog:")
+    print("python Copyright_info_change.py -l [date] [folder path]")
+    print("-----------------------------------------------------------")
+    print("After first release to change changelog:")
+    print("python Copyright_info_change.py -m [date] [hash1] [hash2] [repo] [new_log]")
 
 
 def version():
@@ -246,7 +255,7 @@ def modify_cl_i(date, dirname):
     print("Total num is : %d" % len(modified_file))
 
 
-def modify_cl(date, hash1, hash2, repo):
+def modify_cl(date, hash1, hash2, repo, new_log):
     modified_file = []
     folder1 = 'lastrelease\\'
     folder2 = 'newrelease\\'
@@ -381,7 +390,13 @@ def modify_cl(date, hash1, hash2, repo):
                                             f2list = list((re.findall(r'(^\s*\*\s\s+\S+\s\s+\w+[\. ]?\w+\s\s+)(\S+\s+(.*\n)*)', folder2_cr[-2]))[0])
                                             if f1list[1] == f2list[1]:
                                                 special_list.append(filename)
-                                                for cr in folder2_cr:
+                                                tstr = re.sub(r'\d+\W\d+\W\d+', str(date), folder1_cr[-2])
+                                                findstr = re.findall(r'(^\s*\*\s\s+\d+\W\d+\W\d+\s\s+)(\w+[\. ]?\w+\s\s+)(\S.*)', tstr)
+                                                temp = list(findstr[0])
+                                                temp[2] = new_log+'\n'
+                                                i = temp[0] + temp[1] + temp[2]
+                                                folder1_cr.insert(-1, i)
+                                                for cr in folder1_cr:
                                                     f2.write(cr)
                                                 modified_flag2 = 1
 
@@ -476,10 +491,10 @@ def modify_cl(date, hash1, hash2, repo):
             os.remove(folder2+filename)  # replace the old file with modified on.
             os.rename("%s.bak" % (folder2+filename), folder2+filename)
 
-    print("All file modified is:")
+    print("Modified files with default log is:")
     print(modified_file)
     print("Total num is : %d" % len(modified_file))
-    print("Need to modify manually is:")
+    print("Modified files with customized log is:")
     print(special_list)
     print("Total num is : %d" % len(special_list))
 
@@ -488,9 +503,10 @@ def test():
     print('TESTING!!!')
     opt = '2018-03-12'
     opt1 = '32a51b9cff22ce1794e4947d1aa1496fe1632cfb'
-    opt2 = 'test/python_test'
+    opt2 = '8dc5be6e7725bcb74956e3390bd6b2910116facf'
     opt3 = 'ssh://git@stash.arraycomm.com:7999/bnr/nr_phy_b4860.git'
-    modify_cl(opt, opt1, opt2, opt3)
+    opt4 = 'update for 2nd release'
+    modify_cl(opt, opt1, opt2, opt3, opt4)
 
 def main(argv):
     try:
@@ -516,7 +532,7 @@ def main(argv):
         elif op == "-l":
             modify_cl_i(argv[1], argv[2])
         elif op == "-m":
-            modify_cl(argv[1], argv[2], argv[3], argv[4])
+            modify_cl(argv[1], argv[2], argv[3], argv[4], argv[5])
         else:
             usage()
             sys.exit()
@@ -524,6 +540,6 @@ def main(argv):
 
 if __name__ == "__main__":
     # test()
-    main(sys.argv[1:])
+   main(sys.argv[1:])
  #   modify_cl_i('2018-2-10', 'test')
  #   modify_cl('2018-2-10', 'abdced', 'agdsed', 'http://12345')
