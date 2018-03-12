@@ -84,6 +84,83 @@ def modify_cr(year, dirname):
     print("Total num is : %d" % len(modified_file))
 
 
+
+def inicl(date, filename):
+    with open(filename, "r", encoding="utf-8") as f1, open("%s.bak" % filename, "w", encoding="utf-8") as f2:
+        cr_content = []
+        mocified_cr_content = []
+        find_cr = 0
+        cl_flag = 0
+        log_num = 0
+        modified_flag = 0
+        for num, line in enumerate(f1):
+            if modified_flag == 0:
+                if re.search(r'/\*\*\*\*\*+', line) and find_cr == 0:
+                    find_cr = 1
+                    cr_content.append(line)
+                    continue
+                if find_cr == 1:
+                    if re.search(r'\*\s+Date\s+Who\s+What', line) and cl_flag == 0:
+                        cl_flag = 1
+                        cr_content.append(line)
+                        continue
+                    if cl_flag == 1:
+                        if re.search(r'\*\s+\d+\W\d+\W\d+', line):
+                            cr_content.append(line)
+                            log_num += 1
+                            continue
+                        else:
+                            if re.search(r'\s*\*\*\*\*\*+', line):
+                                find_cr = 0
+                                cl_flag = 0
+                                cr_content.append(line)
+                                # print("CR content is:")
+                                # for i in cr_content:
+                                #     print(i)
+
+                                for i in cr_content:
+                                    if re.search(r'\*\s+Date\s+Who\s+What', i):
+                                        cl_flag = 1
+                                        mocified_cr_content.append(i)
+                                        continue
+                                    if cl_flag == 1:
+                                        if re.search(r'\*\s+\d+\W\d+\W\d+', i) and log_num > 1:
+                                            log_num -= 1
+                                            continue
+                                        elif log_num == 1:
+                                            i = re.sub(r'\d+\W\d+\W\d+', str(date), i)
+                                            findstr = re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+)(.*)', i)
+                                            temp = list(findstr[0])
+                                            temp[2] = 'Create\n'
+                                            i = temp[0] + temp[1] + temp[2]
+                                            mocified_cr_content.append(
+                                                i)  # only retain one change log and change the time.
+                                            log_num -= 1
+                                        else:
+                                            mocified_cr_content.append(i)
+                                    else:
+                                        mocified_cr_content.append(i)
+                                for i in mocified_cr_content:
+                                    f2.write(i)
+                                modified_flag = 1
+                                # print("Modified CR content is:")
+                                # for i in mocified_cr_content:
+                                #     print(i)
+                            else:
+                                cr_content[-1] = cr_content[-1] + line  # one change log has mutiple line.
+                                continue
+                    else:
+                        cr_content.append(line)
+                else:
+                    f2.write(line)
+            else:
+                f2.write(line)
+        os.remove(filename)  # replace the old file with modified on.
+        os.rename("%s.bak" % filename, filename)
+
+
+
+
 def modify_cl_i(date, dirname):
     modified_file = []
 
@@ -136,7 +213,7 @@ def modify_cl_i(date, dirname):
                                                         continue
                                                     elif log_num == 1:
                                                         i = re.sub(r'\d+\W\d+\W\d+', str(date), i)
-                                                        findstr = re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+)(.*)', i)
+                                                        findstr = re.findall(r'(^\s*\*\s\s+\d+\W\d+\W\d+\s\s+)(\w+[\. ]?\w+\s\s+)(\S.*)', i)
                                                         temp = list(findstr[0])
                                                         temp[2] = 'Create\n'
                                                         i = temp[0] + temp[1] + temp[2]
@@ -162,8 +239,8 @@ def modify_cl_i(date, dirname):
                         else:
                             f2.write(line)
                     modified_file.append(newdir)
-                # os.remove(newdir)  # replace the old file with modified on.
-                # os.rename("%s.bak" % newdir, newdir)
+                os.remove(newdir)  # replace the old file with modified on.
+                os.rename("%s.bak" % newdir, newdir)
     print("All file modified is:")
     print(modified_file)
     print("Total num is : %d" % len(modified_file))
@@ -171,65 +248,71 @@ def modify_cl_i(date, dirname):
 
 def modify_cl(date, hash1, hash2, repo):
     modified_file = []
-    # folder1 = 'lastrelease\\'
-    # folder2 = 'newrelease\\'
-    folder1 = 'test1\\'
-    folder2 = 'test2\\'
-    checked_path = ['FLI\\Source\\FLI\\SC\\BasePort\\phy_kernel', 'FLI\\Source\\FLI\\SC\\BasePort\\test\\P2_test', 'test']
-    filelist = ['test1.c']
+    folder1 = 'lastrelease\\'
+    folder2 = 'newrelease\\'
+    checked_path = ['FLI\\Source\\FLI\\SC\\BasePort\\phy_kernel', 'FLI\\Source\\FLI\\SC\\BasePort\\test\\P2_test']
+    filelist = []
+    special_list = []
     start_path = os.path.abspath('.') + '\\'
 
-    # if os.path.exists(folder1):
-    #     print('Remove old %s folder' % folder1)
-    #     os.system('rd/s/q %s' % folder1)
-    #     os.system('mkdir %s' % folder1)
-    # else:
-    #     os.system('mkdir %s' % folder1)
-    #
-    # if os.path.exists(folder2):
-    #     print('Remove old %s folder' % folder2)
-    #     os.system('rd/s/q %s' % folder2)
-    #     os.system('mkdir %s' % folder2)
-    # else:
-    #     os.system('mkdir %s' % folder2)
-    #
-    # print('Beging to clone')
-    # os.system('git clone %s %s ' %(repo, folder1))
-    # os.system('git clone %s %s ' %(repo, folder2))
-    #
-    # print('Being to check out')
-    # os.chdir(folder1)
-    # os.system('git checkout -f %s' % hash1)
-    #
-    # os.chdir(start_path+folder2)
-    # os.system('git checkout -f %s' % hash2)
-    #
-    # os.system('git config diff.renameLimit 99999')
-    #
-    # diff the change between last deliver before change copyright with new delivery before change copyright
-    # os.system('git diff %s~1 %s  --name-only  >..\\filelist.txt ' % (hash1, hash2))
-    #
-    # os.chdir(start_path)
+    if os.path.exists(folder1):
+        print('Remove old %s folder' % folder1)
+        os.system('rd/s/q %s' % folder1)
+        os.system('mkdir %s' % folder1)
+    else:
+        os.system('mkdir %s' % folder1)
 
-    # with open('filelist.txt', "r", encoding="utf-8") as file:
-    #     for num, line in enumerate(file):
-    #         line = line.replace('/', '\\')
-    #         for i in checked_path:
-    #             if i in line:
-    #                 temp = os.path.splitext(line)
-    #                 if os.path.splitext(line)[1] == ".c\n" or os.path.splitext(line)[1] == ".h\n":
-    #                     filelist.append(line)
-    #                     break
-    #             else:
-    #                 continue
-    #
-    # with open('validfile.txt', "w", encoding="utf-8") as file:
-    #     for i in filelist:
-    #         file.write(i)
+    if os.path.exists(folder2):
+        print('Remove old %s folder' % folder2)
+        os.system('rd/s/q %s' % folder2)
+        os.system('mkdir %s' % folder2)
+    else:
+        os.system('mkdir %s' % folder2)
 
-    print('Beging to handle files')
+    print('Beginning to clone')
+    os.system('git clone %s %s ' %(repo, folder1))
+    os.system('git clone %s %s ' %(repo, folder2))
+
+    print('Being to check out')
+    os.chdir(folder1)
+    os.system('git checkout -f %s' % hash1)
+
+    os.chdir(start_path+folder2)
+    os.system('git checkout -f %s' % hash2)
+
+    os.system('git config diff.renameLimit 99999')
+
+    #diff the change between last deliver before change copyright with new delivery before change copyright
+    os.system('git diff %s~1 %s  --name-only  >..\\filelist.txt ' % (hash1, hash2))
+
+    os.chdir(start_path)
+
+    with open('filelist.txt', "r", encoding="utf-8") as file:
+        for num, line in enumerate(file):
+            line = line.replace('/', '\\')
+            for i in checked_path:
+                if i in line:
+                    if os.path.splitext(line)[1] == ".c\n" or os.path.splitext(line)[1] == ".h\n":
+                        filelist.append(line)
+                        break
+                else:
+                    continue
+
+#remove the file from list which is removed in new relaese.
+    with open('handled_file.txt', "w", encoding="utf-8") as file:
+        temlist = []
+        for i in filelist:
+            if os.path.exists(folder2+i.strip('\n')):
+                file.write(i)
+                temlist.append(i)
+            else:
+                continue
+        filelist = temlist
+
+    print('Beginning to handle files')
 
     for filename in filelist:
+        print('Handling file: %s' % filename)
         filename = filename.strip('\n')
         if os.path.exists(folder1+filename):
             folder1_cr = []      #save the copyright content of last release file
@@ -242,7 +325,7 @@ def modify_cl(date, hash1, hash2, repo):
             cl_flag1 = 0         #find change log or not. Judge whether need to hanlde the line with special logic.
             cl_flag2 = 0
             modified_flag2 = 0    #Whehter the copyright modification is done.
-            special_list = []
+
 
             with open(folder1+filename, "r", encoding="utf-8") as file1:      #fetch the copyright content from last release file.
                 for num, line in enumerate(file1):
@@ -294,8 +377,8 @@ def modify_cl(date, hash1, hash2, repo):
                                         folder2_cr.append(line)
                                         for i in range(1, log_num1+1):
                                             i = -1-i
-                                            f1list = list((re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+\S+\s+(.*\n)*)', folder1_cr[i]))[0])
-                                            f2list = list((re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+\S+\s+(.*\n)*)', folder2_cr[-2]))[0])
+                                            f1list = list((re.findall(r'(^\s*\*\s\s+\S+\s\s+\w+[\. ]?\w+\s\s+)(\S+\s+(.*\n)*)', folder1_cr[i]))[0])
+                                            f2list = list((re.findall(r'(^\s*\*\s\s+\S+\s\s+\w+[\. ]?\w+\s\s+)(\S+\s+(.*\n)*)', folder2_cr[-2]))[0])
                                             if f1list[1] == f2list[1]:
                                                 special_list.append(filename)
                                                 for cr in folder2_cr:
@@ -316,13 +399,13 @@ def modify_cl(date, hash1, hash2, repo):
                     else:
                         f2.write(line)
 
-            # os.remove(folder2 + i)  # replace the old file with modified on.
-            # os.rename("%s.bak" % folder2 + i, folder2 + i)
+            os.remove(folder2 + filename)  # replace the old file with modified on.
+            os.rename("%s.bak" % (folder2 + filename), folder2 + filename)
 
 
         else:      #New file should be handled as first release.
             cr_content = []
-            mocified_cr_content = []
+            modified_cr_content = []
             log_num = 0
             find_cr = 0
             cl_flag = 0
@@ -356,26 +439,25 @@ def modify_cl(date, hash1, hash2, repo):
                                         for i in cr_content:
                                             if re.search(r'\*\s+Date\s+Who\s+What', i):
                                                 cl_flag = 1
-                                                mocified_cr_content.append(i)
+                                                modified_cr_content.append(i)
                                                 continue
                                             if cl_flag == 1:
                                                 if re.search(r'\*\s+\d+\W\d+\W\d+', i) and log_num > 1:
                                                     log_num -= 1
                                                     continue
-                                                elif log_num == 1:
+                                                elif log_num == 1:      # only retain one change log and change the time.
                                                     i = re.sub(r'\d+\W\d+\W\d+', str(date), i)
-                                                    findstr = re.findall(r'(^\s*\*\s+\S+\s+)(\S+\s+)(.*)', i)
+                                                    findstr = re.findall(r'(^\s*\*\s\s+\d+\W\d+\W\d+\s\s+)(\w+[\. ]?\w+\s\s+)(\S.*)', i)
                                                     temp = list(findstr[0])
                                                     temp[2] = 'Create\n'
                                                     i = temp[0] + temp[1] + temp[2]
-                                                    mocified_cr_content.append(
-                                                        i)  # only retain one change log and change the time.
+                                                    modified_cr_content.append(i)
                                                     log_num -= 1
                                                 else:
-                                                    mocified_cr_content.append(i)
+                                                    modified_cr_content.append(i)
                                             else:
-                                                mocified_cr_content.append(i)
-                                        for i in mocified_cr_content:
+                                                modified_cr_content.append(i)
+                                        for i in modified_cr_content:
                                             f2.write(i)
                                         modified_flag = 1
                                         # print("Modified CR content is:")
@@ -390,9 +472,9 @@ def modify_cl(date, hash1, hash2, repo):
                             f2.write(line)
                     else:
                         f2.write(line)
-                modified_file.append(i)
-                # os.remove(folder2+i)  # replace the old file with modified on.
-                # os.rename("%s.bak" % folder2+i, folder2+i)
+                modified_file.append(filename)
+            os.remove(folder2+filename)  # replace the old file with modified on.
+            os.rename("%s.bak" % (folder2+filename), folder2+filename)
 
     print("All file modified is:")
     print(modified_file)
@@ -401,6 +483,14 @@ def modify_cl(date, hash1, hash2, repo):
     print(special_list)
     print("Total num is : %d" % len(special_list))
 
+
+def test():
+    print('TESTING!!!')
+    opt = '2018-03-12'
+    opt1 = '32a51b9cff22ce1794e4947d1aa1496fe1632cfb'
+    opt2 = 'test/python_test'
+    opt3 = 'ssh://git@stash.arraycomm.com:7999/bnr/nr_phy_b4860.git'
+    modify_cl(opt, opt1, opt2, opt3)
 
 def main(argv):
     try:
@@ -426,13 +516,14 @@ def main(argv):
         elif op == "-l":
             modify_cl_i(argv[1], argv[2])
         elif op == "-m":
-            modify_cl(argv[1], argv[2], argv[3], argv[4], argv[5])
+            modify_cl(argv[1], argv[2], argv[3], argv[4])
         else:
             usage()
             sys.exit()
 
 
 if __name__ == "__main__":
-#    main(sys.argv[1:])
+    # test()
+    main(sys.argv[1:])
  #   modify_cl_i('2018-2-10', 'test')
-    modify_cl('2018-2-10', 'abdced', 'agdsed', 'http://12345')
+ #   modify_cl('2018-2-10', 'abdced', 'agdsed', 'http://12345')
