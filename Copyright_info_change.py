@@ -259,6 +259,8 @@ def modify_cl(date, hash1, hash2, repo, new_log):
     modified_file = []
     folder1 = 'lastrelease\\'
     folder2 = 'newrelease\\'
+    # folder1 ='test1\\'
+    # folder2 = 'test2\\'
     checked_path = ['FLI\\Source\\FLI\\SC\\BasePort\\phy_kernel', 'FLI\\Source\\FLI\\SC\\BasePort\\test\\P2_test']
     filelist = []
     special_list = []
@@ -386,8 +388,8 @@ def modify_cl(date, hash1, hash2, repo, new_log):
                                         folder2_cr.append(line)
                                         for i in range(1, log_num1+1):
                                             i = -1-i
-                                            f1list = list((re.findall(r'(^\s*\*\s\s+\S+\s\s+\w+[\. ]?\w+\s\s+)(\S+\s+(.*\n)*)', folder1_cr[i]))[0])
-                                            f2list = list((re.findall(r'(^\s*\*\s\s+\S+\s\s+\w+[\. ]?\w+\s\s+)(\S+\s+(.*\n)*)', folder2_cr[-2]))[0])
+                                            f1list = list((re.findall(r'(^\s*\*\s\s+\S+\s\s+)(\w+[\. ]?\w+\s\s+\S+\s+(.*\n)*)', folder1_cr[i]))[0])
+                                            f2list = list((re.findall(r'(^\s*\*\s\s+\S+\s\s+)(\w+[\. ]?\w+\s\s+\S+\s+(.*\n)*)', folder2_cr[-2]))[0])
                                             if f1list[1] == f2list[1]:
                                                 special_list.append(filename)
                                                 tstr = re.sub(r'\d+\W\d+\W\d+', str(date), folder1_cr[-2])
@@ -399,6 +401,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
                                                 for cr in folder1_cr:
                                                     f2.write(cr)
                                                 modified_flag2 = 1
+                                                break
 
                                         if modified_flag2 == 0:
                                             tstr = re.sub(r'\d+\W\d+\W\d+', str(date), folder2_cr[-2])
@@ -539,7 +542,7 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    # test()
-   main(sys.argv[1:])
+ #    test()
+  main(sys.argv[1:])
  #   modify_cl_i('2018-2-10', 'test')
  #   modify_cl('2018-2-10', 'abdced', 'agdsed', 'http://12345')
