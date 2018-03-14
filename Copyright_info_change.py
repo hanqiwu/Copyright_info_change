@@ -259,11 +259,14 @@ def modify_cl(date, hash1, hash2, repo, new_log):
     modified_file = []
     folder1 = 'lastrelease\\'
     folder2 = 'newrelease\\'
-    # folder1 ='test1\\'
-    # folder2 = 'test2\\'
     checked_path = ['FLI\\Source\\FLI\\SC\\BasePort\\phy_kernel', 'FLI\\Source\\FLI\\SC\\BasePort\\test\\P2_test']
-    filelist = []
+    handled_filelist = []
+    # folder1 = 'test1\\'
+    # folder2 = 'test2\\'
+    # checked_path = ['temp1', '']
+    # handled_filelist = ['temp1\\ac_nrPhyDebugHook.h']
     special_list = []
+    sync_list = []
     start_path = os.path.abspath('.') + '\\'
 
     if os.path.exists(folder1):
@@ -304,7 +307,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
             for i in checked_path:
                 if i in line:
                     if os.path.splitext(line)[1] == ".c\n" or os.path.splitext(line)[1] == ".h\n":
-                        filelist.append(line)
+                        handled_filelist.append(line)
                         break
                 else:
                     continue
@@ -312,17 +315,17 @@ def modify_cl(date, hash1, hash2, repo, new_log):
 #remove the file from list which is removed in new relaese.
     with open('handled_file.txt', "w", encoding="utf-8") as file:
         temlist = []
-        for i in filelist:
+        for i in handled_filelist:
             if os.path.exists(folder2+i.strip('\n')):
                 file.write(i)
                 temlist.append(i)
             else:
                 continue
-        filelist = temlist
+        handled_filelist = temlist
 
     print('Beginning to handle files')
 
-    for filename in filelist:
+    for filename in handled_filelist:
         print('Handling file: %s' % filename)
         filename = filename.strip('\n')
         if os.path.exists(folder1+filename):
@@ -494,19 +497,111 @@ def modify_cl(date, hash1, hash2, repo, new_log):
             os.remove(folder2+filename)  # replace the old file with modified on.
             os.rename("%s.bak" % (folder2+filename), folder2+filename)
 
+
+#Sync the copyright from last release to new release for thoes files which are not modified beteen these two release.
+    for path in checked_path:
+        path = folder1 + path
+        for maindir, subdir, file_name_list in os.walk(path):
+            for filename in file_name_list:
+                if os.path.splitext(filename)[1] == ".c" or os.path.splitext(filename)[1] == ".h":
+                    file1_path = os.path.join(maindir, filename)
+                    if file1_path.replace(folder1, '') in handled_filelist:
+                        continue
+                    else:
+                        file2_path = file1_path.replace(folder1, folder2)
+                        if os.path.exists(file2_path):
+                            sync_cr1 = []
+                            sync_cr2 = []
+                            find_cr1 = 0
+                            find_cr2 = 0
+                            cl_flag1 = 0
+                            cl_flag2 = 0
+                            sync_flag = 0
+                            with open(file1_path, "r", encoding="utf-8") as f1:       #fetch the copyright content from last release file.
+                                print('Handling file: %s' % file1_path)
+                                for num, line in enumerate(f1):
+                                    print(line)
+                                    if re.search(r'Copyright\sFUJITSU\sLIMITED', line) and find_cr1 == 0:
+                                        find_cr1 = 1
+                                        sync_cr1.append(line)
+                                        continue
+                                    if find_cr1 == 1:
+                                        if re.search(r'\*\s+Date\s+Who\s+What', line) and cl_flag1 == 0:
+                                            cl_flag1 = 1
+                                            sync_cr1.append(line)
+                                            continue
+                                        if cl_flag1 == 1:
+                                            if re.search(r'\*\s+\d+\W\d+\W\d+', line):
+                                                sync_cr1.append(line)
+                                            else:
+                                                if re.search(r'\s*\*\*\*\*\*+', line):
+                                                    find_cr1 = 0
+                                                    cl_flag1 = 0
+                                                    sync_cr1.append(line)
+                                                    break
+                                                else:
+                                                    sync_cr1[-1] = sync_cr1[-1] + line  # one change log has multiple line.
+                                        else:
+                                            sync_cr1.append(line)
+
+                            with open(file2_path, "r", encoding="utf-8") as f2, open("%s.bak" % (file2_path), "w", encoding="utf-8") as temf:
+                                for num, line in enumerate(f2):
+                                    if sync_flag == 0:
+                                        if re.search(r'Copyright\sFUJITSU\sLIMITED', line) and find_cr2 == 0:
+                                            find_cr2 = 1
+                                            sync_cr2.append(line)
+                                            continue
+                                        if find_cr2 == 1:
+                                            if re.search(r'\*\s+Date\s+Who\s+What', line) and cl_flag2 == 0:
+                                                cl_flag2 = 1
+                                                sync_cr2.append(line)
+                                                continue
+                                            if cl_flag2 == 1:
+                                                if re.search(r'\*\s+\d+\W\d+\W\d+', line):
+                                                    sync_cr2.append(line)
+                                                else:
+                                                    if re.search(r'\s*\*\*\*\*\*+', line):
+                                                        find_cr2 = 0
+                                                        cl_flag2 = 0
+                                                        sync_cr2.append(line)
+                                                        for i in sync_cr1:
+                                                            temf.write(i)
+                                                        sync_flag = 1
+                                                        sync_list.append(file2_path.replace(folder2,''))
+                                                    else:
+                                                        sync_cr2[-1] = sync_cr2[-1] + line  # one change log has multiple line.
+                                            else:
+                                                sync_cr2.append(line)
+                                        else:
+                                            temf.write(line)
+                                    else:
+                                        temf.write(line)
+                            os.remove(file2_path)  # replace the old file with modified on.
+                            os.rename("%s.bak" % (file2_path), file2_path)
+                        else:
+                            continue
+
+
+
+
     print("Modified files with default log is:")
     print(modified_file)
     print("Total num is : %d" % len(modified_file))
+
     print("Modified files with customized log is:")
     print(special_list)
     print("Total num is : %d" % len(special_list))
+
+    print("Synchronized files with last release:")
+    print(sync_list)
+    print("Total num is : %d" % len(sync_list))
 
 
 def test():
     print('TESTING!!!')
     opt = '2018-03-12'
     opt1 = '32a51b9cff22ce1794e4947d1aa1496fe1632cfb'
-    opt2 = '8dc5be6e7725bcb74956e3390bd6b2910116facf'
+    opt2 = 'a41743c8370ebf53562e0d72c47b13750c5c593f'
     opt3 = 'ssh://git@stash.arraycomm.com:7999/bnr/nr_phy_b4860.git'
     opt4 = 'update for 2nd release'
     modify_cl(opt, opt1, opt2, opt3, opt4)
@@ -542,7 +637,7 @@ def main(argv):
 
 
 if __name__ == "__main__":
- #    test()
+    # test()
   main(sys.argv[1:])
  #   modify_cl_i('2018-2-10', 'test')
  #   modify_cl('2018-2-10', 'abdced', 'agdsed', 'http://12345')
