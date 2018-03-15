@@ -185,10 +185,10 @@ def modify_cl_i(date, dirname):
             newdir = os.path.join(maindir, filename)
             if os.path.splitext(filename)[1] == ".c" or os.path.splitext(filename)[1] == ".h":
                 print(newdir)
-                with open(newdir, "r", encoding="utf-8") as f1, open("%s.bak" % newdir, "w", encoding="utf-8") as f2:
+                with open(newdir, "r") as f1, open("%s.bak" % newdir, "w") as f2:
                     for num, line in enumerate(f1):
                         if modified_flag == 0:
-                            if re.search(r'/\*\*\*\*\*+', line) and find_cr == 0:
+                            if re.search(r'/\*\*\*\*\*+', line) and find_cr == 0 and num == 0:
                                 find_cr = 1
                                 cr_content.append(line)
                                 continue
@@ -343,7 +343,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
 
             with open(folder1+filename, "r") as file1:      #fetch the copyright content from last release file.
                 for num, line in enumerate(file1):
-                    if re.search(r'/\*\*\*\*\*+', line) and find_cr1 == 0:
+                    if re.search(r'/\*\*\*\*\*+', line) and find_cr1 == 0 and num == 0:
                         find_cr = 1
                         folder1_cr.append(line)
                         continue
@@ -371,7 +371,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
             with open(folder2 + filename, "r") as f1, open("%s.bak" % (folder2 + filename), "w") as f2:
                 for num, line in enumerate(f1):
                     if modified_flag2 == 0:
-                        if re.search(r'/\*\*\*\*\*+', line) and find_cr2 == 0:
+                        if re.search(r'/\*\*\*\*\*+', line) and find_cr2 == 0 and num == 0:
                             find_cr2 = 1
                             folder2_cr.append(line)
                             continue
@@ -434,7 +434,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
             with open(folder2+filename, "r") as f1, open("%s.bak" % (folder2+filename), "w") as f2:
                 for num, line in enumerate(f1):
                     if modified_flag == 0:
-                        if re.search(r'/\*\*\*\*\*+', line) and find_cr == 0:
+                        if re.search(r'/\*\*\*\*\*+', line) and find_cr == 0 and num == 0:
                             find_cr = 1
                             cr_content.append(line)
                             continue
@@ -522,7 +522,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
                                 print('Handling file: %s' % file1_path)
                                 for num, line in enumerate(f1):
                                     # print(line)
-                                    if re.search(r'Copyright\sFUJITSU\sLIMITED', line) and find_cr1 == 0:
+                                    if re.search(r'/\*\*\*\*\*\*+', line) and find_cr1 == 0 and num == 0:
                                         find_cr1 = 1
                                         sync_cr1.append(line)
                                         continue
@@ -548,7 +548,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
                             with open(file2_path, "r") as f2, open("%s.bak" % (file2_path), "w") as temf:
                                 for num, line in enumerate(f2):
                                     if sync_flag == 0:
-                                        if re.search(r'Copyright\sFUJITSU\sLIMITED', line) and find_cr2 == 0:
+                                        if re.search(r'/\*\*\*\*\*\*+', line) and find_cr2 == 0 and num == 0:
                                             find_cr2 = 1
                                             sync_cr2.append(line)
                                             continue
@@ -578,7 +578,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
                                     else:
                                         temf.write(line)
                             os.remove(file2_path)  # replace the old file with modified on.
-                            os.rename("%s.bak" % (file2_path), file2_path)
+                            os.rename("%s.bak" % file2_path, file2_path)
                         else:
                             continue
 
@@ -600,12 +600,18 @@ def modify_cl(date, hash1, hash2, repo, new_log):
 
 def test():
     print('TESTING!!!')
-    opt = '2018-03-12'
-    opt1 = '32a51b9cff22ce1794e4947d1aa1496fe1632cfb'
-    opt2 = 'e3e104a4bfd55c0fcaaeeaca158ac099eaf720b5'
-    opt3 = 'ssh://git@stash.arraycomm.com:7999/bnr/nr_phy_b4860.git'
-    opt4 = 'update for 2nd release'
-    modify_cl(opt, opt1, opt2, opt3, opt4)
+    # opt = '2018-03-07'
+    # opt1 = '32a51b9cff22ce1794e4947d1aa1496fe1632cfb'
+    # opt2 = 'e3e104a4bfd55c0fcaaeeaca158ac099eaf720b5'
+    # opt3 = 'ssh://git@stash.arraycomm.com:7999/bnr/nr_phy_b4860.git'
+    # opt4 = 'update for 2nd release'
+    # modify_cl(opt, opt1, opt2, opt3, opt4)
+
+    opt = "2018-03-07"
+    opt1 = r'newrelease\FLI\Source\FLI\SC\BasePort\phy_kernel\source\baseport_lib\nr_phy_srs'
+
+    modify_cl_i(opt, opt1)
+
 
 def main(argv):
     try:
@@ -638,7 +644,7 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    # test()
-  main(sys.argv[1:])
+    test()
+  # main(sys.argv[1:])
  #   modify_cl_i('2018-2-10', 'test')
  #   modify_cl('2018-2-10', 'abdced', 'agdsed', 'http://12345')
