@@ -34,7 +34,7 @@ def modify_cr_i(year, dir):
             newdir = os.path.join(maindir, filename)
             if os.path.splitext(filename)[1] == ".c" or os.path.splitext(filename)[1] == ".h":
                 print(newdir)
-                with open(newdir, "r", encoding="utf-8") as f1, open("%s.bak" % newdir, "w", encoding="utf-8") as f2:
+                with open(newdir, "r") as f1, open("%s.bak" % newdir, "w") as f2:
                     for num, line in enumerate(f1):
                         if re.search(r'^\s*\*+\s+Copyright\sFUJITSU\sLIMITED\s*\d\d\d\d-\d\d\d\d', line):
                             print(line)
@@ -301,7 +301,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
 
     os.chdir(start_path)
 
-    with open('filelist.txt', "r", encoding="utf-8") as file:
+    with open('filelist.txt', "r") as file:
         for num, line in enumerate(file):
             line = line.replace('/', '\\')
             for i in checked_path:
@@ -313,12 +313,12 @@ def modify_cl(date, hash1, hash2, repo, new_log):
                     continue
 
 #remove the file from list which is removed in new relaese.
-    with open('handled_file.txt', "w", encoding="utf-8") as file:
+    with open('handled_file.txt', "w") as file:
         temlist = []
         for i in handled_filelist:
             if os.path.exists(folder2+i.strip('\n')):
                 file.write(i)
-                temlist.append(i)
+                temlist.append(i.strip('\n'))
             else:
                 continue
         handled_filelist = temlist
@@ -341,7 +341,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
             modified_flag2 = 0    #Whehter the copyright modification is done.
 
 
-            with open(folder1+filename, "r", encoding="utf-8") as file1:      #fetch the copyright content from last release file.
+            with open(folder1+filename, "r") as file1:      #fetch the copyright content from last release file.
                 for num, line in enumerate(file1):
                     if re.search(r'/\*\*\*\*\*+', line) and find_cr1 == 0:
                         find_cr = 1
@@ -368,7 +368,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
                             folder1_cr.append(line)
 
             # Beginning to modify new release copyright content.
-            with open(folder2 + filename, "r", encoding="utf-8") as f1, open("%s.bak" % (folder2 + filename), "w", encoding="utf-8") as f2:
+            with open(folder2 + filename, "r") as f1, open("%s.bak" % (folder2 + filename), "w") as f2:
                 for num, line in enumerate(f1):
                     if modified_flag2 == 0:
                         if re.search(r'/\*\*\*\*\*+', line) and find_cr2 == 0:
@@ -431,7 +431,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
             find_cr = 0
             cl_flag = 0
             modified_flag = 0
-            with open(folder2+filename, "r", encoding="utf-8") as f1, open("%s.bak" % (folder2+filename), "w", encoding="utf-8") as f2:
+            with open(folder2+filename, "r") as f1, open("%s.bak" % (folder2+filename), "w") as f2:
                 for num, line in enumerate(f1):
                     if modified_flag == 0:
                         if re.search(r'/\*\*\*\*\*+', line) and find_cr == 0:
@@ -505,6 +505,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
             for filename in file_name_list:
                 if os.path.splitext(filename)[1] == ".c" or os.path.splitext(filename)[1] == ".h":
                     file1_path = os.path.join(maindir, filename)
+                    tempfp1 = file1_path.replace(folder1, '')
                     if file1_path.replace(folder1, '') in handled_filelist:
                         continue
                     else:
@@ -517,10 +518,10 @@ def modify_cl(date, hash1, hash2, repo, new_log):
                             cl_flag1 = 0
                             cl_flag2 = 0
                             sync_flag = 0
-                            with open(file1_path, "r", encoding="utf-8") as f1:       #fetch the copyright content from last release file.
+                            with open(file1_path, "r") as f1:       #fetch the copyright content from last release file.
                                 print('Handling file: %s' % file1_path)
                                 for num, line in enumerate(f1):
-                                    print(line)
+                                    # print(line)
                                     if re.search(r'Copyright\sFUJITSU\sLIMITED', line) and find_cr1 == 0:
                                         find_cr1 = 1
                                         sync_cr1.append(line)
@@ -544,7 +545,7 @@ def modify_cl(date, hash1, hash2, repo, new_log):
                                         else:
                                             sync_cr1.append(line)
 
-                            with open(file2_path, "r", encoding="utf-8") as f2, open("%s.bak" % (file2_path), "w", encoding="utf-8") as temf:
+                            with open(file2_path, "r") as f2, open("%s.bak" % (file2_path), "w") as temf:
                                 for num, line in enumerate(f2):
                                     if sync_flag == 0:
                                         if re.search(r'Copyright\sFUJITSU\sLIMITED', line) and find_cr2 == 0:
@@ -584,24 +585,24 @@ def modify_cl(date, hash1, hash2, repo, new_log):
 
 
 
-    print("Modified files with default log is:")
-    print(modified_file)
-    print("Total num is : %d" % len(modified_file))
-
-    print("Modified files with customized log is:")
-    print(special_list)
-    print("Total num is : %d" % len(special_list))
-
-    print("Synchronized files with last release:")
-    print(sync_list)
-    print("Total num is : %d" % len(sync_list))
+    # print("Modified files with default log is:")
+    # print(modified_file)
+    # print("Total num is : %d" % len(modified_file))
+    #
+    # print("Modified files with customized log is:")
+    # print(special_list)
+    # print("Total num is : %d" % len(special_list))
+    #
+    # print("Synchronized files with last release:")
+    # print(sync_list)
+    # print("Total num is : %d" % len(sync_list))
 
 
 def test():
     print('TESTING!!!')
     opt = '2018-03-12'
     opt1 = '32a51b9cff22ce1794e4947d1aa1496fe1632cfb'
-    opt2 = 'a41743c8370ebf53562e0d72c47b13750c5c593f'
+    opt2 = 'e3e104a4bfd55c0fcaaeeaca158ac099eaf720b5'
     opt3 = 'ssh://git@stash.arraycomm.com:7999/bnr/nr_phy_b4860.git'
     opt4 = 'update for 2nd release'
     modify_cl(opt, opt1, opt2, opt3, opt4)
