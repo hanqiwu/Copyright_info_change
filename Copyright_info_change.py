@@ -57,40 +57,142 @@ def modify_cr_i(year, dir):
     print("Total num is : %d" % len(modified_file))
 
 
-def modify_cr(year, dirname):
+def modify_cr(year, hash1, hash2, repo):
     modified_file = []
-    for maindir, subdir, file_name_list in os.walk(dirname):
-        for filename in file_name_list:
-            # print(filename)
-            newdir = os.path.join(maindir, filename)
-            if os.path.splitext(filename)[1] == ".c" or os.path.splitext(filename)[1] == ".h":
-                print(newdir)
-                with open(newdir, "r", encoding="utf-8") as f1, open("%s.bak" % newdir, "w", encoding="utf-8") as f2:
-                    for num, line in enumerate(f1):
-                        if re.search(r'^\s*\*+\s+Copyright\sFUJITSU\sLIMITED\s*\d\d\d\d-\d\d\d\d', line):
-                            print(line)
-                            line = re.sub(r'-\d\d\d\d', '-'+str(year), line)
-                            f2.write(line)
-                            modified_file.append(newdir)
-                        elif re.search(r'^\s*\*+\s+Copyright\sFUJITSU\sLIMITED\s*\d\d\d\d', line):
-                            print(line)
-                            findstr = re.search(r'(\d\d\d\d)', line)
-                            print(findstr)
-                            if findstr[0] < str(year):
-                                line = re.sub(r'\d\d\d\d', findstr+'-'+str(year), line)
-                                f2.write(line)
-                                modified_file.append(newdir)
-                            else:
-                                f2.write(line)
-                        else:
-                            f2.write(line)
-                os.remove(newdir)                           # replace the old file with modified on.
-                os.rename("%s.bak" % newdir, newdir)
-            else:
+    folder1 = 'lastrelease\\'
+    folder2 = 'newrelease\\'
+    checked_path = ['FLI\\FLI\\Source\\FLI\\SC']
+    newfile_list = []
+    start_path = os.path.abspath('.') + '\\'
+
+    if os.path.exists(folder1):
+        print('Remove old %s folder' % folder1)
+        os.system('rd/s/q %s' % folder1)
+        os.system('mkdir %s' % folder1)
+    else:
+        os.system('mkdir %s' % folder1)
+
+    if os.path.exists(folder2):
+        print('Remove old %s folder' % folder2)
+        os.system('rd/s/q %s' % folder2)
+        os.system('mkdir %s' % folder2)
+    else:
+        os.system('mkdir %s' % folder2)
+
+    print('Beginning to clone')
+    os.system('git clone %s %s ' % (repo, folder1))
+    os.system('git clone %s %s ' % (repo, folder2))
+
+    print('Being to check out')
+    os.chdir(folder1)
+    os.system('git checkout -f %s' % hash1)
+
+    os.chdir(start_path + folder2)
+    os.system('git checkout -f %s' % hash2)
+
+    os.system('git config diff.renameLimit 99999')
+
+    # diff the change between last deliver before change copyright with new delivery before change copyright
+    os.system('git diff %s~1 %s  --name-only  >..\\filelist.txt ' % (hash1, hash2))
+
+    os.chdir(start_path)
+
+# Check which files are new files.
+    with open('filelist.txt', "r") as file:
+        for num, line in enumerate(file):
+            line = line.replace('/', '\\')
+            line = line.strip('\n')
+            if os.path.exists(folder1 + line):
                 continue
-    print("All file modified is:")
-    print(modified_file)
-    print("Total num is : %d" % len(modified_file))
+            else:
+                newfile_list.append(line)
+
+    print(newfile_list)
+    os.chdir(folder2)
+
+
+    for dir in checked_path:
+        for maindir, subdir, file_name_list in os.walk(dir):
+            for tempfile in file_name_list:
+                tempfile = os.path.join(maindir, tempfile)
+                if os.path.splitext(tempfile)[1] == ".c" or os.path.splitext(tempfile)[1] == ".h":
+                    modified_flag = 0
+                    if tempfile in newfile_list:      # check whether it's new file
+                        with open(tempfile, "r") as f1, open("%s.bak" % tempfile, "w") as f2:
+                            for num, line in enumerate(f1):
+                                if modified_flag == 0:
+                                    if re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d.*', line):
+                                        line = re.sub(r'\d\d\d\d.*', str(year), line)
+                                        f2.write(line)
+                                        modified_flag = 1
+                                        modified_file.append(tempfile)
+                                    else:
+                                        f2.write(line)
+                                else:
+                                    f2.write(line)
+                    else:
+                        with open(tempfile, "r") as f1, open("%s.bak" % tempfile, "w") as f2:
+                            for num, line in enumerate(f1):
+                                if modified_flag == 0:
+                                    if re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d-\d\d\d\d', line):
+                                        line = re.sub(r'-\d\d\d\d', '-'+str(year), line)      # 2016-2018 ->2016-2019
+                                        f2.write(line)
+                                        modified_flag = 1
+                                        modified_file.append(tempfile)
+
+                                    elif re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d\s+', line):
+                                        findstr = re.search(r'\d\d\d\d', line).group()
+                                        # print(findstr)
+                                        if findstr < str(year):
+                                            line = re.sub(r'\d\d\d\d', findstr + '-' + str(year), line)      # 2017 -> 2017-2018
+                                            f2.write(line)
+                                            modified_flag = 1
+                                            modified_file.append(tempfile)
+                                        else:
+                                            modified_flag = 1
+                                            f2.write(line)
+                                            modified_file.append(tempfile)
+                                    else:
+                                        f2.write(line)
+                                else:
+                                    f2.write(line)
+
+                    if modified_flag == 0:
+                        with open(tempfile, "r") as f1, open("%s.bak" % tempfile, "w") as f2:
+                            for num, line in enumerate(f1):
+                                if modified_flag == 0:
+                                    if re.search(r'\*\s+Copyright.*ArrayComm.*\s\d\d\d\d-\d\d\d\d', line):
+                                        line = re.sub(r'-\d\d\d\d', '-' + str(year), line)
+                                        modified_flag = 1
+                                        f2.write(line)
+                                        modified_file.append(tempfile)
+                                    elif re.search(r'\*\s+Copyright.*ArrayComm.*\s\d\d\d\d\s+', line):
+                                        findstr = re.search(r'\d\d\d\d', line).group()
+                                        # print(findstr)
+                                        if findstr < str(year):
+                                            line = re.sub(r'\d\d\d\d', findstr + '-' + str(year), line)  # 2017 -> 2017-2018
+                                            f2.write(line)
+                                            modified_flag = 1
+                                            modified_file.append(tempfile)
+                                        else:
+                                            modified_flag = 1
+                                            f2.write(line)
+                                            modified_file.append(tempfile)
+                                    else:
+                                        f2.write(line)
+                                else:
+                                    f2.write(line)
+
+
+                    os.remove(tempfile)  # replace the old file with modified on.
+                    os.rename("%s.bak" % tempfile, tempfile)
+
+
+
+
+    # print("All file modified is:")
+    # print(modified_file)
+    # print("Total num is : %d" % len(modified_file))
 
 
 
@@ -607,10 +709,17 @@ def test():
     # opt4 = 'update for 2nd release'
     # modify_cl(opt, opt1, opt2, opt3, opt4)
 
-    opt = "2018-03-07"
-    opt1 = r'newrelease\FLI\Source\FLI\SC\BasePort\phy_kernel\source\baseport_lib\nr_phy_srs'
+    # opt = "2018-03-07"
+    # opt1 = r'newrelease\FLI\Source\FLI\SC\BasePort\phy_kernel\source\baseport_lib\nr_phy_srs'
+    #
+    # modify_cl_i(opt, opt1)
 
-    modify_cl_i(opt, opt1)
+    opt = '2018'
+    opt1 = '9481cd35b9043bce334b25de7b59756661fd0e88'
+    opt2 = '63fb8f90408528c66fbdaa882e17f7b975249131'
+    opt3 = 'ssh://git@stash.arraycomm.com:7999/fm/phy_b4xxx.git'
+
+    modify_cr(opt, opt1, opt2, opt3)
 
 
 def main(argv):
@@ -631,7 +740,7 @@ def main(argv):
             version()
             sys.exit()
         elif op == "-c":
-            modify_cr(argv[1], argv[2])
+            modify_cr(argv[1], argv[2], argv[3], argv[4],)
         elif op == "-i":
             modify_cr_i(argv[1], argv[2])
         elif op == "-l":
