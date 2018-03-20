@@ -63,6 +63,7 @@ def modify_cr(year, hash1, hash2, repo):
     folder2 = 'newrelease\\'
     checked_path = ['FLI\\FLI\\Source\\FLI\\SC']
     newfile_list = []
+    changefile_list = []
     start_path = os.path.abspath('.') + '\\'
 
     if os.path.exists(folder1):
@@ -103,89 +104,173 @@ def modify_cr(year, hash1, hash2, repo):
             line = line.replace('/', '\\')
             line = line.strip('\n')
             if os.path.exists(folder1 + line):
-                continue
+                for i in checked_path:
+                    if i in line:
+                        if os.path.splitext(line)[1] == ".c" or os.path.splitext(line)[1] == ".h":
+                            changefile_list.append(line)
             else:
-                newfile_list.append(line)
+                if os.path.splitext(line)[1] == ".c" or os.path.splitext(line)[1] == ".h":
+                    newfile_list.append(line)
 
+    print("New code File is:")
     print(newfile_list)
+    print("Changed code File is:")
+    print(changefile_list)
     os.chdir(folder2)
 
-
-    for dir in checked_path:
-        for maindir, subdir, file_name_list in os.walk(dir):
-            for tempfile in file_name_list:
-                tempfile = os.path.join(maindir, tempfile)
-                if os.path.splitext(tempfile)[1] == ".c" or os.path.splitext(tempfile)[1] == ".h":
-                    modified_flag = 0
-                    if tempfile in newfile_list:      # check whether it's new file
-                        with open(tempfile, "r") as f1, open("%s.bak" % tempfile, "w") as f2:
-                            for num, line in enumerate(f1):
-                                if modified_flag == 0:
-                                    if re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d.*', line):
-                                        line = re.sub(r'\d\d\d\d.*', str(year), line)
-                                        f2.write(line)
-                                        modified_flag = 1
-                                        modified_file.append(tempfile)
-                                    else:
-                                        f2.write(line)
-                                else:
-                                    f2.write(line)
+    for nfile in newfile_list:
+        modified_flag = 0
+        with open(nfile, "r") as f1, open("%s.bak" % nfile, "w") as f2:
+            for num, line in enumerate(f1):
+                if modified_flag == 0:
+                    if re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d.*', line):
+                        line = re.sub(r'\d\d\d\d.*', str(year), line)
+                        f2.write(line)
+                        modified_flag = 1
+                        modified_file.append(nfile)
                     else:
-                        with open(tempfile, "r") as f1, open("%s.bak" % tempfile, "w") as f2:
-                            for num, line in enumerate(f1):
-                                if modified_flag == 0:
-                                    if re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d-\d\d\d\d', line):
-                                        line = re.sub(r'-\d\d\d\d', '-'+str(year), line)      # 2016-2018 ->2016-2019
-                                        f2.write(line)
-                                        modified_flag = 1
-                                        modified_file.append(tempfile)
+                        f2.write(line)
+                else:
+                    f2.write(line)
+        os.remove(nfile)  # replace the old file with modified one.
+        os.rename("%s.bak" % nfile, nfile)
 
-                                    elif re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d\s+', line):
-                                        findstr = re.search(r'\d\d\d\d', line).group()
-                                        # print(findstr)
-                                        if findstr < str(year):
-                                            line = re.sub(r'\d\d\d\d', findstr + '-' + str(year), line)      # 2017 -> 2017-2018
-                                            f2.write(line)
-                                            modified_flag = 1
-                                            modified_file.append(tempfile)
-                                        else:
-                                            modified_flag = 1
-                                            f2.write(line)
-                                            modified_file.append(tempfile)
-                                    else:
-                                        f2.write(line)
-                                else:
-                                    f2.write(line)
-
+    for cfile in changefile_list:
+        if os.path.exists(cfile):
+            modified_flag = 0
+            with open(cfile, "r") as f1, open("%s.bak" % cfile, "w") as f2:
+                for num, line in enumerate(f1):
                     if modified_flag == 0:
-                        with open(tempfile, "r") as f1, open("%s.bak" % tempfile, "w") as f2:
-                            for num, line in enumerate(f1):
-                                if modified_flag == 0:
-                                    if re.search(r'\*\s+Copyright.*ArrayComm.*\s\d\d\d\d-\d\d\d\d', line):
-                                        line = re.sub(r'-\d\d\d\d', '-' + str(year), line)
-                                        modified_flag = 1
-                                        f2.write(line)
-                                        modified_file.append(tempfile)
-                                    elif re.search(r'\*\s+Copyright.*ArrayComm.*\s\d\d\d\d\s+', line):
-                                        findstr = re.search(r'\d\d\d\d', line).group()
-                                        # print(findstr)
-                                        if findstr < str(year):
-                                            line = re.sub(r'\d\d\d\d', findstr + '-' + str(year), line)  # 2017 -> 2017-2018
-                                            f2.write(line)
-                                            modified_flag = 1
-                                            modified_file.append(tempfile)
-                                        else:
-                                            modified_flag = 1
-                                            f2.write(line)
-                                            modified_file.append(tempfile)
-                                    else:
-                                        f2.write(line)
-                                else:
+                        if re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d-\d\d\d\d', line):
+                            line = re.sub(r'-\d\d\d\d', '-' + str(year), line)  # 2016-2018 ->2016-2019
+                            f2.write(line)
+                            modified_flag = 1
+                            modified_file.append(cfile)
+
+                        elif re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d\s+', line):
+                            findstr = re.search(r'\d\d\d\d', line).group()
+                            # print(findstr)
+                            if findstr < str(year):
+                                line = re.sub(r'\d\d\d\d', findstr + '-' + str(year), line)  # 2017 -> 2017-2018
+                                f2.write(line)
+                                modified_flag = 1
+                                modified_file.append(cfile)
+                            else:
+                                modified_flag = 1
+                                f2.write(line)
+                                modified_file.append(cfile)
+                        else:
+                            f2.write(line)
+                    else:
+                        f2.write(line)
+            if modified_flag == 0:
+                with open(cfile, "r") as f1, open("%s.bak" % cfile, "w") as f2:
+                    for num, line in enumerate(f1):
+                        if modified_flag == 0:
+                            if re.search(r'\*\s+Copyright.*ArrayComm.*\s\d\d\d\d-\d\d\d\d', line):
+                                line = re.sub(r'-\d\d\d\d', '-' + str(year), line)
+                                modified_flag = 1
+                                f2.write(line)
+                                modified_file.append(cfile)
+                            elif re.search(r'\*\s+Copyright.*ArrayComm.*\s\d\d\d\d\s+', line):
+                                findstr = re.search(r'\d\d\d\d', line).group()
+                                # print(findstr)
+                                if findstr < str(year):
+                                    line = re.sub(r'\d\d\d\d', findstr + '-' + str(year), line)  # 2017 -> 2017-2018
                                     f2.write(line)
+                                    modified_flag = 1
+                                    modified_file.append(cfile)
+                                else:
+                                    modified_flag = 1
+                                    f2.write(line)
+                                    modified_file.append(cfile)
+                            else:
+                                f2.write(line)
+                        else:
+                            f2.write(line)
+            os.remove(cfile)  # replace the old file with modified one.
+            os.rename("%s.bak" % cfile, cfile)
+    #
+    # print("All file modified is:")
+    # print(modified_file)
+    # print("Total num is : %d" % len(modified_file))
 
 
-                    os.remove(tempfile)  # replace the old file with modified on.
-                    os.rename("%s.bak" % tempfile, tempfile)
+        # for dir in checked_path:
+    #     for maindir, subdir, file_name_list in os.walk(dir):
+    #         for tempfile in file_name_list:
+    #             tempfile = os.path.join(maindir, tempfile)
+    #             if os.path.splitext(tempfile)[1] == ".c" or os.path.splitext(tempfile)[1] == ".h":
+    #                 modified_flag = 0
+    #                 if tempfile in newfile_list:      # check whether it's new file
+    #                     with open(tempfile, "r") as f1, open("%s.bak" % tempfile, "w") as f2:
+    #                         for num, line in enumerate(f1):
+    #                             if modified_flag == 0:
+    #                                 if re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d.*', line):
+    #                                     line = re.sub(r'\d\d\d\d.*', str(year), line)
+    #                                     f2.write(line)
+    #                                     modified_flag = 1
+    #                                     modified_file.append(tempfile)
+    #                                 else:
+    #                                     f2.write(line)
+    #                             else:
+    #                                 f2.write(line)
+    #                 else:
+    #                     with open(tempfile, "r") as f1, open("%s.bak" % tempfile, "w") as f2:
+    #                         for num, line in enumerate(f1):
+    #                             if modified_flag == 0:
+    #                                 if re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d-\d\d\d\d', line):
+    #                                     line = re.sub(r'-\d\d\d\d', '-'+str(year), line)      # 2016-2018 ->2016-2019
+    #                                     f2.write(line)
+    #                                     modified_flag = 1
+    #                                     modified_file.append(tempfile)
+    #
+    #                                 elif re.search(r'\s*\*+\s+Copyright\s\w+\sLIMITED\s+\d\d\d\d\s+', line):
+    #                                     findstr = re.search(r'\d\d\d\d', line).group()
+    #                                     # print(findstr)
+    #                                     if findstr < str(year):
+    #                                         line = re.sub(r'\d\d\d\d', findstr + '-' + str(year), line)      # 2017 -> 2017-2018
+    #                                         f2.write(line)
+    #                                         modified_flag = 1
+    #                                         modified_file.append(tempfile)
+    #                                     else:
+    #                                         modified_flag = 1
+    #                                         f2.write(line)
+    #                                         modified_file.append(tempfile)
+    #                                 else:
+    #                                     f2.write(line)
+    #                             else:
+    #                                 f2.write(line)
+    #
+    #                 if modified_flag == 0:
+    #                     with open(tempfile, "r") as f1, open("%s.bak" % tempfile, "w") as f2:
+    #                         for num, line in enumerate(f1):
+    #                             if modified_flag == 0:
+    #                                 if re.search(r'\*\s+Copyright.*ArrayComm.*\s\d\d\d\d-\d\d\d\d', line):
+    #                                     line = re.sub(r'-\d\d\d\d', '-' + str(year), line)
+    #                                     modified_flag = 1
+    #                                     f2.write(line)
+    #                                     modified_file.append(tempfile)
+    #                                 elif re.search(r'\*\s+Copyright.*ArrayComm.*\s\d\d\d\d\s+', line):
+    #                                     findstr = re.search(r'\d\d\d\d', line).group()
+    #                                     # print(findstr)
+    #                                     if findstr < str(year):
+    #                                         line = re.sub(r'\d\d\d\d', findstr + '-' + str(year), line)  # 2017 -> 2017-2018
+    #                                         f2.write(line)
+    #                                         modified_flag = 1
+    #                                         modified_file.append(tempfile)
+    #                                     else:
+    #                                         modified_flag = 1
+    #                                         f2.write(line)
+    #                                         modified_file.append(tempfile)
+    #                                 else:
+    #                                     f2.write(line)
+    #                             else:
+    #                                 f2.write(line)
+    #
+    #
+    #                 os.remove(tempfile)  # replace the old file with modified on.
+    #                 os.rename("%s.bak" % tempfile, tempfile)
 
 
 
@@ -715,8 +800,8 @@ def test():
     # modify_cl_i(opt, opt1)
 
     opt = '2018'
-    opt1 = '9481cd35b9043bce334b25de7b59756661fd0e88'
-    opt2 = '63fb8f90408528c66fbdaa882e17f7b975249131'
+    opt1 = '55f8ffa9465601bf13a1bb6d15cb984a910ed186'
+    opt2 = 'becc70a2666bc253d39b4707cda2100459880c9f'
     opt3 = 'ssh://git@stash.arraycomm.com:7999/fm/phy_b4xxx.git'
 
     modify_cr(opt, opt1, opt2, opt3)
